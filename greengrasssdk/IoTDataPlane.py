@@ -33,6 +33,10 @@ class Client:
             * *thingName* (``string``) --
               [REQUIRED]
               The name of the thing.
+            * *shadowName* (``string``) --
+              The name of the shadow; if not
+              specified, the classic shadow will be
+              fetched.
 
         :returns: (``dict``) --
         The output from the GetThingShadow operation
@@ -40,9 +44,10 @@ class Client:
               The state information, in JSON format.
         """
         thing_name = self._get_required_parameter('thingName', **kwargs)
+        shadow_name = kwargs.get('shadowName', None)
         payload = b''
 
-        return self._shadow_op('get', thing_name, payload)
+        return self._shadow_op('get', thing_name, payload, shadowName=shadow_name)
 
     def update_thing_shadow(self, **kwargs):
         r"""
@@ -52,6 +57,10 @@ class Client:
             * *thingName* (``string``) --
               [REQUIRED]
               The name of the thing.
+            * *shadowName* (``string``) --
+              The name of the shadow; if not
+              specified, the classic shadow will be
+              updated.
             * *payload* (``bytes or seekable file-like object``) --
               [REQUIRED]
               The state information, in JSON format.
@@ -62,9 +71,10 @@ class Client:
               The state information, in JSON format.
         """
         thing_name = self._get_required_parameter('thingName', **kwargs)
+        shadow_name = kwargs.get('shadowName', None)
         payload = self._get_required_parameter('payload', **kwargs)
 
-        return self._shadow_op('update', thing_name, payload)
+        return self._shadow_op('update', thing_name, payload, shadowName=shadow_name)
 
     def delete_thing_shadow(self, **kwargs):
         r"""
@@ -74,6 +84,10 @@ class Client:
             * *thingName* (``string``) --
               [REQUIRED]
               The name of the thing.
+            * *shadowName* (``string``) --
+              The name of the shadow; if not
+              specified, the classic shadow will be
+              deleted.
 
         :returns: (``dict``) --
         The output from the DeleteThingShadow operation
@@ -81,9 +95,10 @@ class Client:
               The state information, in JSON format.
         """
         thing_name = self._get_required_parameter('thingName', **kwargs)
+        shadow_name = kwargs.get('shadowName', None)
         payload = b''
 
-        return self._shadow_op('delete', thing_name, payload)
+        return self._shadow_op('delete', thing_name, payload, shadowName=shadow_name)
 
     def publish(self, **kwargs):
         r"""
@@ -138,8 +153,14 @@ class Client:
             ))
         return kwargs[parameter_name]
 
-    def _shadow_op(self, op, thing_name, payload):
-        topic = '$aws/things/{thing_name}/shadow/{op}'.format(thing_name=thing_name, op=op)
+    def _shadow_op(self, op, thing_name, payload, **kwargs):
+        shadow_name = kwargs.get('shadowName', None)
+
+        if shadow_name is None:
+            topic = '$aws/things/{thing_name}/shadow/{op}'.format(thing_name=thing_name, op=op)
+        else:
+            topic = '$aws/things/{thing_name}/shadow/name/{shadow_name}/{op}'.format(
+                things_name=thing_name, shadow_name=shadow_name, op=op)
         function_arn = SHADOW_FUNCTION_ARN
         client_context = {
             'custom': {
